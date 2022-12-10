@@ -132,12 +132,12 @@ public class Shopping {
             constraints.weightx = 0.25;
             pane.add(select, constraints);
 
-            getActionListener(select);
+//            getActionListener(select);
 
             index++;
         }
 
-        JLabel total = new JLabel("Cart Total: $" + calculateCartTotal(demoCart, demoPriceList));
+        JLabel total = new JLabel("Cart Total: $" + calculateCartTotal());
         constraints.gridy = index + 1;
         pane.add(total, constraints);
 
