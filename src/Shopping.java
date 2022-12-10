@@ -83,13 +83,13 @@ public class Shopping {
         return total;
     }
 
-    public void updateCartTotal(JComboBox select, String key, JLabel cartTotal) {
-        select.addActionListener(event -> {
-            int newQty = (int) select.getSelectedItem();
-            this.demoCart.put(key, newQty);
-            cartTotal = new JLabel("Cart Total: $" + calculateCartTotal());
-        });
-    }
+//    public void updateCartTotal(JComboBox select, String key, JLabel cartTotal) {
+//        select.addActionListener(event -> {
+//            int newQty = (int) select.getSelectedItem();
+//            this.demoCart.put(key, newQty);
+//            cartTotal = new JLabel("Cart Total: $" + calculateCartTotal());
+//        });
+//    }
 
     public void addComponentsToCartPane(Container pane) {
 
