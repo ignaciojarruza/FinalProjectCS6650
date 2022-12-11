@@ -156,7 +156,6 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		return this.mutualExclusive;
 	}
 
-
 	//add to cart
 	public synchronized String addToCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
 
