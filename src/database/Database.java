@@ -35,7 +35,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		this.stockList = new ConcurrentHashMap<String, Integer>();
 		this.mutualExclusive = false;
 		this.userCart = new ConcurrentHashMap<String, HashMap<String, Integer>>();
-
+		this.userOrders = new ConcurrentHashMap<>();
 		this.addToDatabase();
 		this.pro = new Proposer();
 		pro.updateAllServers(server, port, n);

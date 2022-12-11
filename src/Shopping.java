@@ -56,7 +56,7 @@ public class Shopping {
         return comboList;
     }
 
-    public void addComponentsToShoppingPane(Container pane, JFrame frame) {
+    public void addComponentsToShoppingPane(Container pane, JFrame frame) throws RemoteException {
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
 
@@ -83,11 +83,18 @@ public class Shopping {
 
             constraints.weightx = 0.5;
             pane.add(productImage, constraints);
-            JComboBox<String> select = new JComboBox<>(convertToComboList(stockList.get(key)));
-            selectMap.put(key, select);
+            this.stockList = thisServer.getAllStock();
             constraints.gridx = 3;
             constraints.weightx = 0.25;
-            pane.add(select, constraints);
+            if (stockList.get(key) == 0) {
+                JLabel outOfStock = new JLabel("Item out of stock");
+                pane.add(outOfStock, constraints);
+            } else {
+                JComboBox<String> select = new JComboBox<>(convertToComboList(stockList.get(key)));
+                selectMap.put(key, select);
+                pane.add(select, constraints);
+            }
+
             index++;
         }
 
@@ -117,11 +124,12 @@ public class Shopping {
                 JScrollPane cartScrollPane = new JScrollPane(cartPanel);
 
                 try {
-                    addComponentsToCartPane(cartPanel);
+                    addComponentsToCartPane(cartPanel, pane, frame);
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
                 }
                 frame.getContentPane().removeAll();
+                frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
                 frame.add(cartScrollPane);
                 frame.pack();
                 frame.setVisible(true);
@@ -142,7 +150,7 @@ public class Shopping {
     }
 
 
-    public void addComponentsToCartPane(Container pane) throws RemoteException {
+    public void addComponentsToCartPane(Container pane, Container shopPane, JFrame frame) throws RemoteException {
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
@@ -153,7 +161,7 @@ public class Shopping {
         int index = 0;
         HashMap<String, JComboBox> selectMap = new HashMap<>();
 
-        if (cart == null) {
+        if (cart == null || cart.size() == 0) {
             JLabel emptyCart = new JLabel("Your cart is empty. Return to the Shop All page to get something!");
             emptyCart.setHorizontalAlignment(JLabel.CENTER);
             constraints.weighty = 1;
@@ -239,6 +247,20 @@ public class Shopping {
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
                 }
+                JPanel shoppingPanel = new JPanel(new GridBagLayout());
+                JScrollPane shopScrollPane = new JScrollPane(shoppingPanel);
+
+                try {
+                    addComponentsToShoppingPane(shoppingPanel, frame);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+                frame.getContentPane().removeAll();
+                frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                frame.add(shopScrollPane);
+                frame.pack();
+                frame.setVisible(true);
+
             }
         });
     }
