@@ -14,7 +14,7 @@ import java.rmi.registry.*;
 
 public class Database extends UnicastRemoteObject implements DatabaseI {
 	private ConcurrentHashMap<String, String> items;
-	private ConcurrentHashMap<String, Double> priceList;
+	private ConcurrentHashMap<String, Integer> priceList;
 	private ConcurrentHashMap<String, Integer> stockList;
 
 	private ConcurrentHashMap<String, HashMap<String, Integer>> userCart;
@@ -31,14 +31,34 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	public Database(String server, String port, int n) throws RemoteException {
 		super();
 		this.items = new ConcurrentHashMap<String, String>();
-		this.priceList = new ConcurrentHashMap<String, Double>();
+		this.priceList = new ConcurrentHashMap<String, Integer>();
 		this.stockList = new ConcurrentHashMap<String, Integer>();
 		this.mutualExclusive = false;
+		this.userCart = new ConcurrentHashMap<String, HashMap<String, Integer>>();
 
+		this.addToDatabase();
 		this.pro = new Proposer();
 		pro.updateAllServers(server, port, n);
 		this.accept = new Acceptor();
 		this.learn = new Learner();
+	}
+
+	public void addToDatabase() {
+		this.items.put("Nike Air Max 90", "./images/image1.png");
+		this.stockList.put("Nike Air Max 90", 5);
+		this.priceList.put("Nike Air Max 90", 200);
+		this.items.put("Jordan Retro 12", "./images/image2.png");
+		this.stockList.put("Jordan Retro 12", 4);
+		this.priceList.put("Jordan Retro 12", 231);
+		this.items.put("Nike Air Force 1 '07 LV8", "./images/image3.png");
+		this.stockList.put("Nike Air Force 1 '07 LV8", 10);
+		this.priceList.put("Nike Air Force 1 '07 LV8", 180);
+		this.items.put("New Balance 574 Core", "./images/image4.png");
+		this.stockList.put("New Balance 574 Core", 6);
+		this.priceList.put("New Balance 574 Core", 199);
+		this.items.put("Nike Air Huarache", "./images/image5.png");
+		this.stockList.put("Nike Air Huarache", 20);
+		this.priceList.put("Nike Air Huarache", 99);
 	}
 
 	//Used to add new items into the items hashmap
@@ -55,7 +75,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	}
 
 	//Used to add new item prices into the priceList hashmap
-	public void putPrice(String key, Double price) throws RemoteException {
+	public void putPrice(String key, Integer price) throws RemoteException {
 		if (!this.mutualExclusive) {
 			this.mutualExclusive = !this.mutualExclusive;
 			this.priceList.put(key, price);
@@ -85,7 +105,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	}
 
 	//Used to get the price of an item
-	public Double getPrice(String key) throws RemoteException {
+	public Integer getPrice(String key) throws RemoteException {
 		return this.priceList.get(key);
 	}
 
@@ -107,8 +127,8 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	}
 
 	//Used to get all item prices
-	public ConcurrentHashMap<String, Double> getAllPrices() throws RemoteException {
-		ConcurrentHashMap<String, Double> copyPrices = new ConcurrentHashMap<String, Double>();
+	public ConcurrentHashMap<String, Integer> getAllPrices() throws RemoteException {
+		ConcurrentHashMap<String, Integer> copyPrices = new ConcurrentHashMap<String, Integer>();
 		copyPrices.putAll(this.priceList);
 		return copyPrices;
 	}
@@ -136,14 +156,6 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	}
 
 
-
-
-
-
-
-
-
-
 	//add to cart
 	public synchronized String addToCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
 
@@ -165,26 +177,32 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		catch (Exception e) {
 			return "Exception while updating cart" + e.getMessage();
 		}
+		return "Successfully updated cart with " + ItemIdAndCount.size() + " products";
+	}
+
+	public synchronized String updateCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
+		try {
+			userCart.put(userId, ItemIdAndCount);
+		}
+		catch (Exception e) {
+			return "Exception while updating cart" + e.getMessage();
+		}
 		return "Successfully updated cart..";
 	}
 
 	public synchronized HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
 
-		HashMap<String, Integer> items = getCartItems(userId);
 		if(userCart.containsKey(userId)) {
+			HashMap<String, Integer> items = userCart.get(userId);
 
 			for(String it:items.keySet()) {
 				if(getStock(it) < items.get(it)) {
 					items.remove(it);
 				}
 			}
-		}
-		if(items == null || items.size() == 0) {
-			return null;
-		}
-		else {
 			return items;
 		}
+		return null;
 	}
 
 	public String checkout(String userId) {

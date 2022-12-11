@@ -16,12 +16,12 @@ import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Shopping {
-    HashMap<String, String> demoItems = new HashMap<>();
-    HashMap<String, Integer> demoStockList = new HashMap<>();
-    HashMap<String, Integer> demoPriceList = new HashMap<>();
-    HashMap<String, Integer> demoCart = new HashMap<>();
+    ConcurrentHashMap<String, String> itemList;
+    ConcurrentHashMap<String, Integer> stockList;
+    ConcurrentHashMap<String, Integer> priceList;
 
     String userId;
     ResourceManagerI thisServer;
@@ -33,6 +33,9 @@ public class Shopping {
         this.host = host;
         this.port = port;
         this.thisServer = connectToOneAvailableServer(host, port);
+        this.itemList = thisServer.getAllItems();
+        this.stockList = thisServer.getAllStock();
+        this.priceList = thisServer.getAllPrices();
     }
 
     public static ResourceManagerI connectToOneAvailableServer(String host, String port) throws RemoteException, NotBoundException, MalformedURLException {
@@ -53,37 +56,22 @@ public class Shopping {
         return comboList;
     }
 
-    public void addComponentsToShoppingPane(Container pane, JTabbedPane tabbedPane) {
+    public void addComponentsToShoppingPane(Container pane, JFrame frame) {
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
-
-        demoItems.put("Nike Air Max 90", "./images/image1.png");
-        demoStockList.put("Nike Air Max 90", 5);
-        demoPriceList.put("Nike Air Max 90", 200);
-        demoItems.put("Jordan Retro 12", "./images/image2.png");
-        demoStockList.put("Jordan Retro 12", 4);
-        demoPriceList.put("Jordan Retro 12", 231);
-        demoItems.put("Nike Air Force 1 '07 LV8", "./images/image3.png");
-        demoStockList.put("Nike Air Force 1 '07 LV8", 10);
-        demoPriceList.put("Nike Air Force 1 '07 LV8", 180);
-        demoItems.put("New Balance 574 Core", "./images/image4.png");
-        demoStockList.put("New Balance 574 Core", 6);
-        demoPriceList.put("New Balance 574 Core", 199);
-        demoItems.put("Nike Air Huarache", "./images/image5.png");
-        demoStockList.put("Nike Air Huarache", 20);
-        demoPriceList.put("Nike Air Huarache", 99);
 
 
         constraints.gridwidth = 1;
         int index = 1;
-        for (String key : demoItems.keySet()) {
-            Image image = new ImageIcon(Shopping.class.getResource(demoItems.get(key))).getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+        HashMap<String, JComboBox> selectMap = new HashMap<>();
+        for (String key : itemList.keySet()) {
+            Image image = new ImageIcon(Shopping.class.getResource(itemList.get(key))).getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
             ImageIcon imageIcon = new ImageIcon(image);
             constraints.gridy = index + 1;
             constraints.gridx = 0;
             JLabel productTitle = new JLabel(key);
             JLabel productImage = new JLabel(imageIcon);
-            JLabel productPrice = new JLabel("$" + demoPriceList.get(key));
+            JLabel productPrice = new JLabel("$" + priceList.get(key));
             productTitle.setVerticalAlignment(JLabel.CENTER);
             productTitle.setHorizontalAlignment(JLabel.CENTER);
             constraints.weightx = 0.25;
@@ -95,7 +83,8 @@ public class Shopping {
 
             constraints.weightx = 0.5;
             pane.add(productImage, constraints);
-            JComboBox<String> select = new JComboBox<>(convertToComboList(demoStockList.get(key)));
+            JComboBox<String> select = new JComboBox<>(convertToComboList(stockList.get(key)));
+            selectMap.put(key, select);
             constraints.gridx = 3;
             constraints.weightx = 0.25;
             pane.add(select, constraints);
@@ -109,70 +98,107 @@ public class Shopping {
         addToCart.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //TODO: add products to cart hashmap here
                 System.out.println("Added to cart");
-                tabbedPane.setSelectedIndex(1);
+                HashMap<String, Integer> ItemIdAndCount = new HashMap<>();
+                for (String key : selectMap.keySet()) {
+                    int itemQty = Integer.parseInt(selectMap.get(key).getSelectedItem().toString());
+                    if (itemQty > 0) {
+                        ItemIdAndCount.put(key, itemQty);
+                    }
+                }
+                try {
+                    System.out.println(ItemIdAndCount.size());
+                    addToCart(userId, ItemIdAndCount);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+
+                JPanel cartPanel = new JPanel(new GridBagLayout());
+                JScrollPane cartScrollPane = new JScrollPane(cartPanel);
+
+                try {
+                    addComponentsToCartPane(cartPanel);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+                frame.getContentPane().removeAll();
+                frame.add(cartScrollPane);
+                frame.pack();
+                frame.setVisible(true);
             }
         });
 
     }
 
-    public int calculateCartTotal() {
+    public int calculateCartTotal(HashMap<String, Integer> cart) {
         int total = 0;
-        for (String item : demoCart.keySet()) {
-            total += demoCart.get(item) * demoPriceList.get(item);
+        if (cart == null) {
+            return total;
+        }
+        for (String item : cart.keySet()) {
+            total += cart.get(item) * priceList.get(item);
         }
         return total;
     }
 
 
-    public void addComponentsToCartPane(Container pane) {
+    public void addComponentsToCartPane(Container pane) throws RemoteException {
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
 
-        demoCart.put("Nike Air Max 90", 2);
-        demoCart.put("Nike Air Huarache", 1);
+        HashMap<String, Integer> cart = getCartItems(userId);
 
-        JLabel cartTitle = new JLabel("These items are in your cart. Time to checkout!");
-        cartTitle.setHorizontalAlignment(JLabel.CENTER);
-        constraints.weighty = 1;
-        constraints.gridwidth = 4;
-        pane.add(cartTitle, constraints);
 
-        constraints.gridwidth = 1;
         int index = 0;
         HashMap<String, JComboBox> selectMap = new HashMap<>();
-        for (String key : demoCart.keySet()) {
-            Image image = new ImageIcon(Shopping.class.getResource(demoItems.get(key))).getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
-            ImageIcon imageIcon = new ImageIcon(image);
-            constraints.gridy = index + 1;
-            constraints.gridx = 0;
-            JLabel productTitle = new JLabel(key);
-            JLabel productImage = new JLabel(imageIcon);
-            JLabel productPrice = new JLabel("$" + demoPriceList.get(key));
-            productTitle.setVerticalAlignment(JLabel.CENTER);
-            productTitle.setHorizontalAlignment(JLabel.CENTER);
-            constraints.weightx = 0.25;
-            pane.add(productTitle, constraints);
-            constraints.gridx = 1;
 
-            pane.add(productPrice, constraints);
-            constraints.gridx = 2;
+        if (cart == null) {
+            JLabel emptyCart = new JLabel("Your cart is empty. Return to the Shop All page to get something!");
+            emptyCart.setHorizontalAlignment(JLabel.CENTER);
+            constraints.weighty = 1;
+            constraints.gridwidth = 4;
+            pane.add(emptyCart, constraints);
+        } else {
+            JLabel cartTitle = new JLabel("These items are in your cart. Time to checkout!");
+            cartTitle.setHorizontalAlignment(JLabel.CENTER);
+            constraints.weighty = 1;
+            constraints.gridwidth = 4;
+            pane.add(cartTitle, constraints);
 
-            constraints.weightx = 0.5;
-            pane.add(productImage, constraints);
-            JComboBox<String> select = new JComboBox<>(convertToComboList(demoStockList.get(key)));
-            select.setSelectedIndex(demoCart.get(key));
-            selectMap.put(key, select);
-            constraints.gridx = 3;
-            constraints.weightx = 0.25;
-            pane.add(select, constraints);
+            constraints.gridwidth = 1;
 
-            index++;
+            for (String key : cart.keySet()) {
+                Image image = new ImageIcon(Shopping.class.getResource(itemList.get(key))).getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+                ImageIcon imageIcon = new ImageIcon(image);
+                constraints.gridy = index + 1;
+                constraints.gridx = 0;
+                JLabel productTitle = new JLabel(key);
+                JLabel productImage = new JLabel(imageIcon);
+                JLabel productPrice = new JLabel("$" + priceList.get(key));
+                productTitle.setVerticalAlignment(JLabel.CENTER);
+                productTitle.setHorizontalAlignment(JLabel.CENTER);
+                constraints.weightx = 0.25;
+                pane.add(productTitle, constraints);
+                constraints.gridx = 1;
+
+                pane.add(productPrice, constraints);
+                constraints.gridx = 2;
+
+                constraints.weightx = 0.5;
+                pane.add(productImage, constraints);
+                JComboBox<String> select = new JComboBox<>(convertToComboList(stockList.get(key)));
+                select.setSelectedIndex(cart.get(key));
+                selectMap.put(key, select);
+                constraints.gridx = 3;
+                constraints.weightx = 0.25;
+                pane.add(select, constraints);
+
+                index++;
+            }
         }
 
-        JLabel total = new JLabel("Cart Total: $" + calculateCartTotal());
+        JLabel total = new JLabel("Cart Total: $" + calculateCartTotal(cart));
         constraints.gridy = ++index;
         pane.add(total, constraints);
 
@@ -186,14 +212,21 @@ public class Shopping {
                 for (String key : selectMap.keySet()) {
                     JComboBox select = selectMap.get(key);
                     int newQty = Integer.parseInt(select.getSelectedItem().toString());
-                    demoCart.put(key, newQty);
-                    total.setText("Cart Total: $" + calculateCartTotal());
+                    cart.put(key, newQty);
+                }
+                total.setText("Cart Total: $" + calculateCartTotal(cart));
+                try {
+                    updateCart(userId, cart);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
                 }
             }
         });
 
+        index ++;
 
         JButton checkout = new JButton("Checkout");
+        constraints.gridy = index;
         constraints.anchor = GridBagConstraints.PAGE_END;
         pane.add(checkout, constraints);
 
@@ -201,17 +234,26 @@ public class Shopping {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Checking out");
-                //TODO: checkout and remove products from user cart and stock list
+                try {
+                    checkout(userId);
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
             }
         });
     }
 
-    public void addTOCart(String userId, HashMap<String, Integer> ItemIdAndCount) throws RemoteException {
+
+    public void addToCart(String userId, HashMap<String, Integer> ItemIdAndCount) throws RemoteException {
         thisServer.addToCart(userId, ItemIdAndCount);
     }
 
-    public void getCartItems(String userId) throws RemoteException {
-        HashMap<String, Integer> cartList = thisServer.getCartItems(userId);
+    public void updateCart(String userId, HashMap<String, Integer> ItemIdAndCount) throws RemoteException {
+        thisServer.updateCart(userId, ItemIdAndCount);
+    }
+
+    public HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
+        return thisServer.getCartItems(userId);
     }
 
     public void checkout(String userId) throws RemoteException {
@@ -232,22 +274,26 @@ public class Shopping {
         }
 
         JFrame frame = new JFrame("DistributedShopping.com");
-        JTabbedPane tabbedPane = new JTabbedPane();
-        frame.setExtendedState(JFrame.MAXIMIZED_VERT);
+//        JTabbedPane tabbedPane = new JTabbedPane();
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 
         JPanel shoppingPanel = new JPanel(new GridBagLayout());
         JPanel cartPanel = new JPanel(new GridBagLayout());
         Shopping shop = new Shopping(args[0], args[1], args[2]);
-        shop.addComponentsToShoppingPane(shoppingPanel, tabbedPane);
-        shop.addComponentsToCartPane(cartPanel);
 
-        tabbedPane.addTab("Shop All", shoppingPanel);
-        tabbedPane.addTab("Cart", cartPanel);
-        frame.add(tabbedPane, BorderLayout.CENTER);
-        JScrollPane scrollPane = new JScrollPane(tabbedPane);
-        frame.add(scrollPane);
+        JScrollPane shopScrollPane = new JScrollPane(shoppingPanel);
+
+        shop.addComponentsToShoppingPane(shoppingPanel, frame);
+//        shop.addComponentsToCartPane(cartPanel);
+
+//        tabbedPane.addTab("Shop All", shoppingPanel);
+//        tabbedPane.addTab("Cart", cartPanel);
+//        frame.add(tabbedPane, BorderLayout.CENTER);
+
+//        frame.add(cartScrollPane);
+        frame.add(shopScrollPane);
         frame.pack();
         frame.setVisible(true);
     }

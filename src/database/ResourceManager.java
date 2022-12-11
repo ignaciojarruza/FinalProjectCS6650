@@ -66,7 +66,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 	}
 
 	//Populates all replicas with price of item
-	public void populatePriceInReplicas(String item, Double price) throws RemoteException {
+	public void populatePriceInReplicas(String item, Integer price) throws RemoteException {
 		try {
 			for (int i = 0; i < this.numReplicas; i++) {
 				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
@@ -111,7 +111,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 	}
 
 	//Retrieves item image url from a replica
-	public Double getPrice(String key) throws RemoteException {
+	public Integer getPrice(String key) throws RemoteException {
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
@@ -122,7 +122,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
-		return 0.0;
+		return 0;
 	}
 
 	//Retrieves item image url from a replica
@@ -157,7 +157,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 	}
 
 	//Retrieves all prices from a replica
-	public ConcurrentHashMap<String, Double> getAllPrices() throws RemoteException {
+	public ConcurrentHashMap<String, Integer> getAllPrices() throws RemoteException {
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
@@ -168,7 +168,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
-		return new ConcurrentHashMap<String, Double>();
+		return new ConcurrentHashMap<String, Integer>();
 	}
 
 	//Retrieves all stock from a replica
@@ -208,6 +208,22 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
 				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
 				System.out.println(replica.addToCart(userId, ItemIdAndCount));
+			}
+		} catch (NotBoundException nbe) {
+			nbe.printStackTrace();
+		} catch (MalformedURLException | RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+
+	//update cart in all replicas
+	//add to cart in all replicas
+	public void updateCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
+		try {
+			for (int i = 0; i < this.numReplicas; i++) {
+				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				System.out.println(replica.updateCart(userId, ItemIdAndCount));
 			}
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
