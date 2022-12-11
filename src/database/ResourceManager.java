@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 import java.rmi.registry.*;
 import java.net.MalformedURLException;
 
-public class ResourceManager extends UnicastRemoteObject implements ResourceManagerI {
+public class ResourceManager extends UnicastRemoteObject implements ResourceManagerI, Runnable {
 	private int numReplicas;
 	private String server;
 	private String port;
@@ -40,12 +40,19 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 				this.replicas[i] = String.format("%d", portInt + i);
 				Database replica = new Database(server, port, numReplicas);
 				Naming.rebind(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, portInt + i), replica);
+
+				//Thread serverThread=new Thread();
+				//serverThread.start();
 			}
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void run() {
+
 	}
 
 	//Populates all replicas with item and item image url
@@ -251,13 +258,11 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		int randomIndex = new Random().nextInt(this.numReplicas);
 		//get cart from db and check whether all items are still available..
 		try {
-			for (int i = 0; i < this.numReplicas; i++) {
-				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
-				String msg = replica.checkout(userId);
+			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
+			String msg = replica.checkout(userId);
 
-				System.out.println("Checkout msg" + msg);
-			}
+			System.out.println("Checkout msg" + msg);
 		} catch (Exception e) {
 
 		}

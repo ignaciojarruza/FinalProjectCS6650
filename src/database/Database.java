@@ -35,6 +35,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		this.stockList = new ConcurrentHashMap<String, Integer>();
 		this.mutualExclusive = false;
 		this.userCart = new ConcurrentHashMap<String, HashMap<String, Integer>>();
+		this.userOrders = new ConcurrentHashMap<>();
 
 		this.addToDatabase();
 		this.pro = new Proposer();
@@ -215,16 +216,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 				System.out.println(" Cart is empty or Items are went out of stock ");
 			}
 			else {
-				//checkOutMsg = pro.propose(userId, items);
-
-				for (String item:items.keySet()) {
-					for(int i=0; i<items.get(item); i++){
-						this.reduceStock(item);
-					}
-					this.updateUserOrders(userId, item, items.get(item));
-					this.removeItemsFromCart(userId, item);
-				}
-
+				checkOutMsg = pro.propose(userId, items);
 			}
 		}
 		catch (Exception e) {
@@ -240,7 +232,6 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 			items.remove(itemId);
 		}
 	}
-
 
 	public void updateUserOrders(String userId, String item, int count) throws RemoteException {
 		try {

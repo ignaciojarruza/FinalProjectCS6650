@@ -46,9 +46,8 @@ public class Proposer {
             log("Sending prepare requests to all acceptors");
             for(int i=0; i<n; i++){
                 try {
-                    Registry registry = LocateRegistry.getRegistry(server, Integer.parseInt(port+i));
-                    String key = String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, this.port + 1 + i);
-                    DatabaseI databaseI = (DatabaseI) registry.lookup(key);
+                    String key = String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + i);
+                    DatabaseI databaseI = (DatabaseI) Naming.lookup(key);
                     if(databaseI.prepare(myProposalId, items)){
                         count ++;
                     }
@@ -68,9 +67,8 @@ public class Proposer {
                 log("Sending accept requests to all acceptors");
                 for(int i=0; i<n; i++){
                     try {
-                        Registry registry = LocateRegistry.getRegistry(server, Integer.parseInt(port+i));
-                        String key = String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, this.port + 1 + i);
-                        DatabaseI databaseI = (DatabaseI) registry.lookup(key);
+                        String key = String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + i);
+                        DatabaseI databaseI = (DatabaseI) Naming.lookup(key);
                         if(databaseI.accept(myProposalId, items)){
                             count ++;
                         }
@@ -97,9 +95,8 @@ public class Proposer {
                 log("Sending commit requests to all Learners");
                 for(int i=0; i<n; i++){
                     try {
-                        Registry registry = LocateRegistry.getRegistry(server, Integer.parseInt(port+i));
-                        String key = String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, this.port + 1 + i);
-                        DatabaseI databaseI = (DatabaseI) registry.lookup(key);
+                        String key = String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + i);
+                        DatabaseI databaseI = (DatabaseI) Naming.lookup(key);
                         databaseI.commit(userId, items, databaseI);
                         databaseI.setProposerProposalId(myProposalId);
                     }
