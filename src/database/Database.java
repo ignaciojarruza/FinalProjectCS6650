@@ -190,7 +190,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		return "Successfully updated cart..";
 	}
 
-	public synchronized HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
+	public HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
 
 		if(userCart.containsKey(userId)) {
 			HashMap<String, Integer> items = userCart.get(userId);
@@ -215,7 +215,16 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 				System.out.println(" Cart is empty or Items are went out of stock ");
 			}
 			else {
-				checkOutMsg = pro.propose(userId, items);
+				//checkOutMsg = pro.propose(userId, items);
+
+				for (String item:items.keySet()) {
+					for(int i=0; i<items.get(item); i++){
+						this.reduceStock(item);
+					}
+					this.updateUserOrders(userId, item, items.get(item));
+					this.removeItemsFromCart(userId, item);
+				}
+
 			}
 		}
 		catch (Exception e) {
@@ -223,6 +232,15 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		}
 		return checkOutMsg;
 	}
+
+	public void removeItemsFromCart(String userId, String itemId) throws RemoteException {
+
+		HashMap<String, Integer> items = getCartItems(userId);
+		if(userCart.containsKey(userId)) {
+			items.remove(itemId);
+		}
+	}
+
 
 	public void updateUserOrders(String userId, String item, int count) throws RemoteException {
 		try {

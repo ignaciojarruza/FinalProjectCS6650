@@ -251,11 +251,13 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		int randomIndex = new Random().nextInt(this.numReplicas);
 		//get cart from db and check whether all items are still available..
 		try {
-			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
-			String msg = replica.checkout(userId);
+			for (int i = 0; i < this.numReplicas; i++) {
+				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				String msg = replica.checkout(userId);
 
-			System.out.println("Checkout msg" + msg);
+				System.out.println("Checkout msg" + msg);
+			}
 		} catch (Exception e) {
 
 		}
