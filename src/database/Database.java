@@ -155,7 +155,6 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		return this.mutualExclusive;
 	}
 
-
 	//add to cart
 	public synchronized String addToCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
 
@@ -190,7 +189,7 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 		return "Successfully updated cart..";
 	}
 
-	public synchronized HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
+	public HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
 
 		if(userCart.containsKey(userId)) {
 			HashMap<String, Integer> items = userCart.get(userId);
@@ -222,6 +221,14 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 
 		}
 		return checkOutMsg;
+	}
+
+	public void removeItemsFromCart(String userId, String itemId) throws RemoteException {
+
+		HashMap<String, Integer> items = getCartItems(userId);
+		if(userCart.containsKey(userId)) {
+			items.remove(itemId);
+		}
 	}
 
 	public void updateUserOrders(String userId, String item, int count) throws RemoteException {
