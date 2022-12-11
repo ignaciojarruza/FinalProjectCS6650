@@ -28,6 +28,7 @@ public class Learner {
                 databaseI.reduceStock(item);
             }
             databaseI.updateUserOrders(userId, item, items.get(item));
+            databaseI.removeItemsFromCart(userId, item);
         }
 
         return "Commit success";

@@ -36,4 +36,6 @@ public interface DatabaseI extends Remote {
 	void updateUserOrders(String userId, String item, int count) throws RemoteException;
 
 	HashMap<String, Integer> getUserOrderList(String userId) throws RemoteException;
+
+	void removeItemsFromCart(String userId, String item) throws RemoteException;
 }
