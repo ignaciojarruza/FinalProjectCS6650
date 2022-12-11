@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 import java.rmi.registry.*;
 import java.net.MalformedURLException;
 
-public class ResourceManager extends UnicastRemoteObject implements ResourceManagerI {
+public class ResourceManager extends UnicastRemoteObject implements ResourceManagerI, Runnable {
 	private int numReplicas;
 	private String server;
 	private String port;
@@ -40,12 +40,19 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 				this.replicas[i] = String.format("%d", portInt + i);
 				Database replica = new Database(server, port, numReplicas);
 				Naming.rebind(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, portInt + i), replica);
+
+				//Thread serverThread=new Thread();
+				//serverThread.start();
 			}
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void run() {
+
 	}
 
 	//Populates all replicas with item and item image url
