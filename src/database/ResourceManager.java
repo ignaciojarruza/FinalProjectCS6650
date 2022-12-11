@@ -1,3 +1,12 @@
+package database;
+
+import Paxos.Acceptor;
+import Paxos.Learner;
+import Paxos.Proposer;
+import database.Database;
+import database.DatabaseI;
+
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.rmi.RemoteException;
 import java.rmi.server.*;
@@ -29,7 +38,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
 			for (int i = 0; i < this.numReplicas; i++) {
 				this.replicas[i] = String.format("%d", portInt + i);
-				Database replica = new Database();
+				Database replica = new Database(server, port, numReplicas);
 				Naming.rebind(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, portInt + i), replica);
 			}
 		} catch (MalformedURLException e) {
@@ -44,7 +53,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			for (int i = 0; i < this.numReplicas; i++) {
 				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-				DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
 				replica.putItem(item, value);
 			}
 		} catch (NotBoundException nbe) {
@@ -61,7 +70,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			for (int i = 0; i < this.numReplicas; i++) {
 				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-				DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
 				replica.putPrice(item, price);
 			}
 		} catch (NotBoundException nbe) {
@@ -76,7 +85,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			for (int i = 0; i < this.numReplicas; i++) {
 				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-				DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
 				replica.putStock(item, stock);
 			}
 		} catch (NotBoundException nbe) {
@@ -91,7 +100,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
 			return replica.getItem(key);
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
@@ -106,7 +115,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
 			return replica.getPrice(key);
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
@@ -121,7 +130,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
 			return replica.getStock(key);
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
@@ -137,7 +146,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
 			return replica.getAllItems();
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
@@ -152,7 +161,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
 			return replica.getAllPrices();
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
@@ -167,7 +176,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			int randomIndex = new Random().nextInt(this.numReplicas);
 			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(this.port) + 1 + randomIndex));
 			return replica.getAllStock();
 		} catch (NotBoundException nbe) {
 			nbe.printStackTrace();
@@ -182,7 +191,7 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		try {
 			for (int i = 0; i < this.numReplicas; i++) {
 				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-				DatabaseI replica = (DatabaseI)Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
 				System.out.println(replica.reduceStock(item));
 			}
 		} catch (NotBoundException nbe) {
@@ -190,5 +199,62 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	//add to cart in all replicas
+	public void addToCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
+		try {
+			for (int i = 0; i < this.numReplicas; i++) {
+				LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+				DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + i));
+				System.out.println(replica.addToCart(userId, ItemIdAndCount));
+			}
+		} catch (NotBoundException nbe) {
+			nbe.printStackTrace();
+		} catch (MalformedURLException | RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public HashMap<String, Integer> getCartItems(String userId) {
+		int randomIndex = new Random().nextInt(this.numReplicas);
+		//get cart from db and check whether all items are still available..
+		try {
+			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
+			return replica.getCartItems(userId);
+		} catch (Exception e) {
+
+		}
+		return null;
+	}
+
+	//checkout
+	public void checkout(String userId) {
+
+		int randomIndex = new Random().nextInt(this.numReplicas);
+		//get cart from db and check whether all items are still available..
+		try {
+			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
+			String msg = replica.checkout(userId);
+
+			System.out.println("Checkout msg" + msg);
+		} catch (Exception e) {
+
+		}
+	}
+
+	public HashMap<String, Integer> getUserOrderList(String userId) throws RemoteException {
+		int randomIndex = new Random().nextInt(this.numReplicas);
+		//get cart from db and check whether all items are still available..
+		try {
+			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
+			return replica.getUserOrderList(userId);
+		} catch (Exception e) {
+
+		}
+		return null;
 	}
 }
