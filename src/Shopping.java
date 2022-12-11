@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Shopping {
@@ -73,6 +74,14 @@ public class Shopping {
         constraints.anchor = GridBagConstraints.PAGE_END;
         pane.add(addToCart, constraints);
 
+        addToCart.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Add products to cart
+                System.out.println("Added to cart");
+            }
+        });
+
     }
 
     public int calculateCartTotal() {
@@ -83,13 +92,10 @@ public class Shopping {
         return total;
     }
 
-//    public void updateCartTotal(JComboBox select, String key, JLabel cartTotal) {
-//        select.addActionListener(event -> {
-//            int newQty = (int) select.getSelectedItem();
-//            this.demoCart.put(key, newQty);
-//            cartTotal = new JLabel("Cart Total: $" + calculateCartTotal());
-//        });
-//    }
+    public void updateCartTotal(int newQty, String key) {
+        demoCart.put(key, newQty);
+
+    }
 
     public void addComponentsToCartPane(Container pane) {
 
@@ -107,6 +113,7 @@ public class Shopping {
 
         constraints.gridwidth = 1;
         int index = 0;
+        HashMap<String, JComboBox> selectMap = new HashMap<>();
         for (String key : demoCart.keySet()) {
             Image image = new ImageIcon(Shopping.class.getResource(demoItems.get(key))).getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
             ImageIcon imageIcon = new ImageIcon(image);
@@ -128,11 +135,10 @@ public class Shopping {
             pane.add(productImage, constraints);
             JComboBox<String> select = new JComboBox<>(convertToComboList(demoStockList.get(key)));
             select.setSelectedIndex(demoCart.get(key));
+            selectMap.put(key, select);
             constraints.gridx = 3;
             constraints.weightx = 0.25;
             pane.add(select, constraints);
-
-//            getActionListener(select);
 
             index++;
         }
@@ -141,9 +147,33 @@ public class Shopping {
         constraints.gridy = index + 1;
         pane.add(total, constraints);
 
+        JButton updateCart = new JButton("Update Cart");
+        constraints.anchor = GridBagConstraints.PAGE_END;
+        pane.add(updateCart, constraints);
+
+        updateCart.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                for (String key : selectMap.keySet()) {
+                    JComboBox select = selectMap.get(key);
+                    int newQty = Integer.parseInt(select.getSelectedItem().toString());
+                    demoCart.put(key, newQty);
+                    total.setText("Cart Total: $" + calculateCartTotal());
+                }
+            }
+        });
+
+
         JButton checkout = new JButton("Checkout");
         constraints.anchor = GridBagConstraints.PAGE_END;
         pane.add(checkout, constraints);
+
+        checkout.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Checking out");
+            }
+        });
     }
 
 
