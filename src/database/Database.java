@@ -1,3 +1,10 @@
+package database;
+
+import Paxos.Acceptor;
+import Paxos.Learner;
+import Paxos.Proposer;
+
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.rmi.RemoteException;
 import java.rmi.server.*;
@@ -10,15 +17,28 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	private ConcurrentHashMap<String, Double> priceList;
 	private ConcurrentHashMap<String, Integer> stockList;
 
+	private ConcurrentHashMap<String, HashMap<String, Integer>> userCart;
+
+	private ConcurrentHashMap<String, HashMap<String, Integer>> userOrders;
+
 	public boolean mutualExclusive;
 
+	Proposer pro = null;
+	Acceptor accept = null;
+	Learner learn = null;
+
 	//Database constructor
-	public Database() throws RemoteException {
+	public Database(String server, String port, int n) throws RemoteException {
 		super();
 		this.items = new ConcurrentHashMap<String, String>();
 		this.priceList = new ConcurrentHashMap<String, Double>();
 		this.stockList = new ConcurrentHashMap<String, Integer>();
 		this.mutualExclusive = false;
+
+		this.pro = new Proposer();
+		pro.updateAllServers(server, port, n);
+		this.accept = new Acceptor();
+		this.learn = new Learner();
 	}
 
 	//Used to add new items into the items hashmap
@@ -114,4 +134,119 @@ public class Database extends UnicastRemoteObject implements DatabaseI {
 	public boolean isAvailable() throws RemoteException {
 		return this.mutualExclusive;
 	}
+
+
+
+
+
+
+
+
+
+
+	//add to cart
+	public synchronized String addToCart(String userId, HashMap<String, Integer> ItemIdAndCount) {
+
+		try {
+			if (userCart.containsKey(userId)) {
+				HashMap<String, Integer> tmp = userCart.get(userId);
+				for (String itemId : ItemIdAndCount.keySet()) {
+					if (tmp.containsKey(itemId)) {
+						tmp.put(itemId, ItemIdAndCount.get(itemId) + tmp.get(itemId));
+					} else {
+						tmp.put(itemId, ItemIdAndCount.get(itemId));
+					}
+				}
+				userCart.put(userId, tmp);
+			} else {
+				userCart.put(userId, ItemIdAndCount);
+			}
+		}
+		catch (Exception e) {
+			return "Exception while updating cart" + e.getMessage();
+		}
+		return "Successfully updated cart..";
+	}
+
+	public synchronized HashMap<String, Integer> getCartItems(String userId) throws RemoteException {
+
+		HashMap<String, Integer> items = getCartItems(userId);
+		if(userCart.containsKey(userId)) {
+
+			for(String it:items.keySet()) {
+				if(getStock(it) < items.get(it)) {
+					items.remove(it);
+				}
+			}
+		}
+		if(items == null || items.size() == 0) {
+			return null;
+		}
+		else {
+			return items;
+		}
+	}
+
+	public String checkout(String userId) {
+
+		String checkOutMsg = "";
+		//get cart from db and check whether all items are still available..
+		try {
+			HashMap<String, Integer> items = getCartItems(userId);
+			if(items == null) {
+				System.out.println(" Cart is empty or Items are went out of stock ");
+			}
+			else {
+				checkOutMsg = pro.propose(userId, items);
+			}
+		}
+		catch (Exception e) {
+
+		}
+		return checkOutMsg;
+	}
+
+	public void updateUserOrders(String userId, String item, int count) throws RemoteException {
+		try {
+			if (userOrders.containsKey(userId)) {
+				HashMap<String, Integer> tmp = userOrders.get(item);
+				tmp.put(item, count);
+			} else {
+				HashMap<String, Integer> tmp = new HashMap<>();
+				tmp.put(item, count);
+				userOrders.put(userId, tmp);
+			}
+
+		}
+		catch (Exception e) {
+			System.out.println( "Exception while updating Order List" + e.getMessage() );
+		}
+	}
+
+	public synchronized HashMap<String, Integer> getUserOrderList(String userId) throws RemoteException {
+
+		if(userOrders.containsKey(userId)) {
+			return userOrders.get(userId);
+		}
+		else {
+			return null;
+		}
+	}
+
+	public boolean prepare(int id, HashMap<String, Integer> items) throws SocketTimeoutException, RemoteException, InterruptedException {
+		return accept.prepare(id, items);
+	}
+
+	public boolean accept(int id, HashMap<String, Integer> items) throws InterruptedException, SocketTimeoutException, RemoteException {
+		return accept.accept(id, items);
+	}
+
+	public String commit(String userId, HashMap<String, Integer> items, DatabaseI databaseI) throws RemoteException {
+		return learn.commit(userId, items, databaseI);
+	}
+
+	public void setProposerProposalId(int id) throws RemoteException {
+		pro.setmyProposalId(id);
+	}
+
 }

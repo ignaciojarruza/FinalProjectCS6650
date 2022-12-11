@@ -1,8 +1,42 @@
+import database.ResourceManager;
+import database.ResourceManagerI;
+
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 public class Shopping {
+
+    String userId;
+    ResourceManagerI thisServer;
+    String host;
+    String port;
+
+    public Shopping(String host, String port, String userId) throws NotBoundException, RemoteException {
+        this.userId = userId;
+        this.host = host;
+        this.port = port;
+        this.thisServer = connectToOneAvailableServer(host, port);
+    }
+
+    public static ResourceManagerI connectToOneAvailableServer(String host, String port) throws RemoteException, NotBoundException {
+
+        Registry registry = LocateRegistry.getRegistry(host, Integer.parseInt(port));
+        String key = String.format("rmi://%s:%s/ResourceManager", host, port);
+        ResourceManagerI resourceManagerI = (ResourceManagerI) registry.lookup(key);
+        System.out.println("connected to server on port : " + port);
+
+        return resourceManagerI;
+    }
 
     public static String[] convertToComboList(int stock) {
         String[] comboList = new String[stock + 1];
@@ -75,13 +109,36 @@ public class Shopping {
 
     }
 
+    public void addTOCart(String userId, HashMap<String, Integer> ItemIdAndCount) throws RemoteException {
+        thisServer.addToCart(userId, ItemIdAndCount);
+    }
 
-    public static void main(String[] args) {
+    public void getCartItems(String userId) throws RemoteException {
+        HashMap<String, Integer> cartList = thisServer.getCartItems(userId);
+    }
+
+    public void checkout(String userId) throws RemoteException {
+        thisServer.checkout(userId);
+    }
+
+    public void getUserOrderList(String userId) throws RemoteException{
+        HashMap<String, Integer> orderList = thisServer.getUserOrderList(userId);
+    }
+
+    public static void main(String[] args) throws NotBoundException, RemoteException {
+
+        if(args.length < 3) {
+
+            // example Java Shopping localhost 1111 rao@gmail.com
+            System.out.println( " Required host, port no, User-emailId ");
+            System.exit(0);
+        }
+
         JFrame frame = new JFrame("DistributedShopping.com");
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel panel = new JPanel(new GridBagLayout());
-        Shopping shop = new Shopping();
+        Shopping shop = new Shopping(args[0], args[1], args[2]);
         shop.addComponentsToPane(panel, frame);
         frame.pack();
         frame.setVisible(true);
