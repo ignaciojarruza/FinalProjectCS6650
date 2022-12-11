@@ -21,7 +21,7 @@ public class Shopping {
         return comboList;
     }
 
-    public void addComponentsToShoppingPane(Container pane) {
+    public void addComponentsToShoppingPane(Container pane, JTabbedPane tabbedPane) {
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
 
@@ -77,8 +77,9 @@ public class Shopping {
         addToCart.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Add products to cart
+                //TODO: add products to cart hashmap here
                 System.out.println("Added to cart");
+                tabbedPane.setSelectedIndex(1);
             }
         });
 
@@ -92,10 +93,6 @@ public class Shopping {
         return total;
     }
 
-    public void updateCartTotal(int newQty, String key) {
-        demoCart.put(key, newQty);
-
-    }
 
     public void addComponentsToCartPane(Container pane) {
 
@@ -144,11 +141,11 @@ public class Shopping {
         }
 
         JLabel total = new JLabel("Cart Total: $" + calculateCartTotal());
-        constraints.gridy = index + 1;
+        constraints.gridy = ++index;
         pane.add(total, constraints);
 
         JButton updateCart = new JButton("Update Cart");
-        constraints.anchor = GridBagConstraints.PAGE_END;
+        constraints.gridy = ++index;
         pane.add(updateCart, constraints);
 
         updateCart.addActionListener(new ActionListener() {
@@ -172,6 +169,7 @@ public class Shopping {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Checking out");
+                //TODO: checkout and remove products from user cart and stock list
             }
         });
     }
@@ -186,7 +184,7 @@ public class Shopping {
         JPanel shoppingPanel = new JPanel(new GridBagLayout());
         JPanel cartPanel = new JPanel(new GridBagLayout());
         Shopping shop = new Shopping();
-        shop.addComponentsToShoppingPane(shoppingPanel);
+        shop.addComponentsToShoppingPane(shoppingPanel, tabbedPane);
         shop.addComponentsToCartPane(cartPanel);
 
         tabbedPane.addTab("Shop All", shoppingPanel);
