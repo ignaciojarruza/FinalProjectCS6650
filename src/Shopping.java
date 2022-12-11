@@ -5,6 +5,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -21,18 +22,18 @@ public class Shopping {
     String host;
     String port;
 
-    public Shopping(String host, String port, String userId) throws NotBoundException, RemoteException {
+    public Shopping(String host, String port, String userId) throws NotBoundException, RemoteException, MalformedURLException {
         this.userId = userId;
         this.host = host;
         this.port = port;
         this.thisServer = connectToOneAvailableServer(host, port);
     }
 
-    public static ResourceManagerI connectToOneAvailableServer(String host, String port) throws RemoteException, NotBoundException {
+    public static ResourceManagerI connectToOneAvailableServer(String host, String port) throws RemoteException, NotBoundException, MalformedURLException {
 
-        Registry registry = LocateRegistry.getRegistry(host, Integer.parseInt(port));
+        Registry registry = LocateRegistry.getRegistry(Integer.parseInt(port));
         String key = String.format("rmi://%s:%s/ResourceManager", host, port);
-        ResourceManagerI resourceManagerI = (ResourceManagerI) registry.lookup(key);
+        ResourceManagerI resourceManagerI = (ResourceManagerI) Naming.lookup(key);
         System.out.println("connected to server on port : " + port);
 
         return resourceManagerI;
@@ -125,7 +126,7 @@ public class Shopping {
         HashMap<String, Integer> orderList = thisServer.getUserOrderList(userId);
     }
 
-    public static void main(String[] args) throws NotBoundException, RemoteException {
+    public static void main(String[] args) throws NotBoundException, RemoteException, MalformedURLException {
 
         if(args.length < 3) {
 
