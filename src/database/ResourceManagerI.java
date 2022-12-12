@@ -1,5 +1,7 @@
 package database;
 
+import java.net.MalformedURLException;
+import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.*;
@@ -30,7 +32,7 @@ public interface ResourceManagerI extends Remote {
 
 	public void updateCart(String userId, HashMap<String, Integer> ItemIdAndCount) throws RemoteException;
 
-	public void checkout(String userId) throws RemoteException;
+	public String checkout(String userId) throws RemoteException, MalformedURLException, NotBoundException;
 
 	public HashMap<String, Integer> getCartItems(String userId) throws RemoteException;
 

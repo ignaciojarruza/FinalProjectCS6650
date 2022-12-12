@@ -253,19 +253,16 @@ public class ResourceManager extends UnicastRemoteObject implements ResourceMana
 	}
 
 	//checkout
-	public void checkout(String userId) {
+	public String checkout(String userId) throws RemoteException, MalformedURLException, NotBoundException {
 
 		int randomIndex = new Random().nextInt(this.numReplicas);
-		//get cart from db and check whether all items are still available..
-		try {
-			LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
-			DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
-			String msg = replica.checkout(userId);
+		//get cart from db and check whether all items are still available.
+		LocateRegistry.getRegistry(this.server, Integer.parseInt(this.port));
+		DatabaseI replica = (DatabaseI) Naming.lookup(String.format("rmi://%s:%s/%s:%d/Replica", this.server, this.port, this.server, Integer.parseInt(port) + 1 + randomIndex));
+		String msg = replica.checkout(userId);
 
-			System.out.println("Checkout msg" + msg);
-		} catch (Exception e) {
+		return msg;
 
-		}
 	}
 
 	public HashMap<String, Integer> getUserOrderList(String userId) throws RemoteException {

@@ -119,7 +119,7 @@ public class Proposer {
             System.out.println("Remote Exception" + e.getMessage());
         }
 
-        return "Successfully checkout";
+        return "Successfully checked out";
     }
 
     public int getmyProposalId() {

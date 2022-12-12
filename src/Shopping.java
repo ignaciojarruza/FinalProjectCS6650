@@ -1,8 +1,6 @@
-import database.ResourceManager;
 import database.ResourceManagerI;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -10,12 +8,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Shopping {
@@ -40,7 +33,6 @@ public class Shopping {
 
     public static ResourceManagerI connectToOneAvailableServer(String host, String port) throws RemoteException, NotBoundException, MalformedURLException {
 
-        Registry registry = LocateRegistry.getRegistry(Integer.parseInt(port));
         String key = String.format("rmi://%s:%s/ResourceManager", host, port);
         ResourceManagerI resourceManagerI = (ResourceManagerI) Naming.lookup(key);
         System.out.println("connected to server on port : " + port);
@@ -105,7 +97,6 @@ public class Shopping {
         addToCart.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Added to cart");
                 HashMap<String, Integer> ItemIdAndCount = new HashMap<>();
                 for (String key : selectMap.keySet()) {
                     int itemQty = Integer.parseInt(selectMap.get(key).getSelectedItem().toString());
@@ -114,7 +105,6 @@ public class Shopping {
                     }
                 }
                 try {
-                    System.out.println(ItemIdAndCount.size());
                     addToCart(userId, ItemIdAndCount);
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
@@ -124,7 +114,7 @@ public class Shopping {
                 JScrollPane cartScrollPane = new JScrollPane(cartPanel);
 
                 try {
-                    addComponentsToCartPane(cartPanel, pane, frame);
+                    addComponentsToCartPane(cartPanel, frame);
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
                 }
@@ -150,7 +140,7 @@ public class Shopping {
     }
 
 
-    public void addComponentsToCartPane(Container pane, Container shopPane, JFrame frame) throws RemoteException {
+    public void addComponentsToCartPane(Container pane, JFrame frame) throws RemoteException {
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.fill = GridBagConstraints.HORIZONTAL;
@@ -235,34 +225,49 @@ public class Shopping {
 
         JButton checkout = new JButton("Checkout");
         constraints.gridy = index;
-        constraints.anchor = GridBagConstraints.PAGE_END;
         pane.add(checkout, constraints);
+
+        JButton returnToShop = new JButton("Return to Shop All");
+        constraints.gridy = index + 1;
+        constraints.anchor = GridBagConstraints.PAGE_END;
+        pane.add(returnToShop, constraints);
+
+        returnToShop.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                refreshShoppingPane(frame);
+            }
+        });
 
         checkout.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("Checking out");
                 try {
-                    checkout(userId);
-                } catch (RemoteException ex) {
+                    String returnMessage = checkout(userId);
+                    JOptionPane.showMessageDialog(null, returnMessage);
+                } catch (RemoteException | MalformedURLException | NotBoundException ex) {
                     ex.printStackTrace();
                 }
-                JPanel shoppingPanel = new JPanel(new GridBagLayout());
-                JScrollPane shopScrollPane = new JScrollPane(shoppingPanel);
-
-                try {
-                    addComponentsToShoppingPane(shoppingPanel, frame);
-                } catch (RemoteException ex) {
-                    ex.printStackTrace();
-                }
-                frame.getContentPane().removeAll();
-                frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-                frame.add(shopScrollPane);
-                frame.pack();
-                frame.setVisible(true);
-
+                refreshShoppingPane(frame);
             }
         });
+
+    }
+
+    public void refreshShoppingPane(JFrame frame) {
+        JPanel shoppingPanel = new JPanel(new GridBagLayout());
+        JScrollPane shopScrollPane = new JScrollPane(shoppingPanel);
+
+        try {
+            addComponentsToShoppingPane(shoppingPanel, frame);
+        } catch (RemoteException ex) {
+            ex.printStackTrace();
+        }
+        frame.getContentPane().removeAll();
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        frame.add(shopScrollPane);
+        frame.pack();
+        frame.setVisible(true);
     }
 
 
@@ -278,43 +283,30 @@ public class Shopping {
         return thisServer.getCartItems(userId);
     }
 
-    public void checkout(String userId) throws RemoteException {
-        thisServer.checkout(userId);
+    public String checkout(String userId) throws RemoteException, MalformedURLException, NotBoundException {
+        return thisServer.checkout(userId);
     }
 
-    public void getUserOrderList(String userId) throws RemoteException{
-        HashMap<String, Integer> orderList = thisServer.getUserOrderList(userId);
-    }
 
     public static void main(String[] args) throws NotBoundException, RemoteException, MalformedURLException {
 
         if(args.length < 3) {
-
             // example Java Shopping localhost 1111 rao@gmail.com
-            System.out.println( " Required host, port no, User-emailId ");
+            System.out.println("ERROR: Please enter host, port number and email in the following format.");
+            System.out.println("Java Shopping localhost 1111 rao@northeastern.edu");
             System.exit(0);
         }
 
         JFrame frame = new JFrame("DistributedShopping.com");
-//        JTabbedPane tabbedPane = new JTabbedPane();
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-
         JPanel shoppingPanel = new JPanel(new GridBagLayout());
-        JPanel cartPanel = new JPanel(new GridBagLayout());
         Shopping shop = new Shopping(args[0], args[1], args[2]);
-
         JScrollPane shopScrollPane = new JScrollPane(shoppingPanel);
 
         shop.addComponentsToShoppingPane(shoppingPanel, frame);
-//        shop.addComponentsToCartPane(cartPanel);
 
-//        tabbedPane.addTab("Shop All", shoppingPanel);
-//        tabbedPane.addTab("Cart", cartPanel);
-//        frame.add(tabbedPane, BorderLayout.CENTER);
-
-//        frame.add(cartScrollPane);
         frame.add(shopScrollPane);
         frame.pack();
         frame.setVisible(true);
